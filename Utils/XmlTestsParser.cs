@@ -2,8 +2,39 @@
 using System;
 using Locators.Models;
 using System.Xml;
+using Locators.Exceptions;
+using Locators.Objects;
 
 namespace Locators.Utils {
+    /*
+        XML structure ([attribute] - optional):
+    <Tests>
+        <TestClass name="name_of_the_test_class">
+            <TestMethod name="name_of_the_method_in_the_class">
+                <TestSuite name="test_suite_kind">
+                    <TestCase>
+                        [<Parameter type="type_of_parameter">
+                            value
+                        </Parameter>]
+                        ...
+                        [<Return type="type_of_return">
+                            
+                        </Return> |
+                        <Throw exception="type_of_exception"/>]
+                    </TestCase>
+                    ...
+                </TestSuite>
+                ...
+            </TestMethod>
+            ...
+        </TestClass>
+        ...
+    </Tests>
+    */
+
+    /// <summary>
+    /// XML tests parser which can convert XML into `TestCaseData` list object
+    /// </summary>
     public class XmlTestsParser {
         public Dictionary<string, Dictionary<string, Dictionary<string, List<TestCaseData>>>> TestCases { get; private set; }
 
@@ -49,21 +80,32 @@ namespace Locators.Utils {
                                 .Select(ParseParameter)
                                 .ToList();
 
+                            TestCaseData testCase = new(parameters.ToArray());
+
+                            // Defines returns and thros if present
                             string? returnTypeString = testCaseElement.Descendants("Return").FirstOrDefault()?.Attribute("type")?.Value;
                             string? exceptionTypeString = testCaseElement.Descendants("Throw").FirstOrDefault()?.Attribute("exception")?.Value;
 
+                            // Checks if both present
                             if (!string.IsNullOrEmpty(returnTypeString) && !string.IsNullOrEmpty(exceptionTypeString)) {
-                                throw new XmlException($"<TestCase> does not allow both <Return> and <Throw> in the same tag");
+                                throw new XmlException($"In file '{filePath}' <TestCase> does not allow both <Return> and <Throw> in the same tag");
                             }
+                            // Checks if return present
+                            else if (!string.IsNullOrEmpty(returnTypeString)) {
+                                Type returnType = ResolveType(returnTypeString)
+                                    ?? throw new XmlException($"In file '{filePath}' <Return> does not have a type");
+                                string returnValue = testCaseElement.Descendants("Return").FirstOrDefault()?.Value
+                                    ?? string.Empty;
 
-                            var testCase = new TestCaseData([.. parameters]);
-
-                            if (returnTypeString != null) {
-                                testCase.Returns(Type.GetType(returnTypeString));
+                                if (returnType == typeof(Type)) {
+                                    testCase.Returns(ResolveType(returnValue));
+                                } else {
+                                    testCase.Returns(Activator.CreateInstance(returnType, new object[] { returnValue }));
+                                }
                             }
-
-                            if (exceptionTypeString != null) {
-                                testCase.Returns(Type.GetType(exceptionTypeString));
+                            // Checks if throw present
+                            else if (!string.IsNullOrEmpty(exceptionTypeString)) {
+                                testCase.Returns(ResolveType(exceptionTypeString));
                             }
 
                             suiteList.Add(testCase);
@@ -94,9 +136,13 @@ namespace Locators.Utils {
             return Activator.CreateInstance(parameterType, fields);
         }
 
-        private Type? ResolveType(string typeName) {
+        private Type? ResolveType(string? typeName) {
             if (string.IsNullOrEmpty(typeName)) {
                 return null;
+            }
+
+            if (typeName == "Type") {
+                return typeof(Type);
             }
 
             // Handle built-in types
@@ -117,6 +163,7 @@ namespace Locators.Utils {
             type = Type.GetType(typeName);
 
             return type;
+            
         }
 
         private static readonly Dictionary<string, Type> BuiltInTypes = new() {
@@ -138,6 +185,14 @@ namespace Locators.Utils {
             { "void", typeof(void) },
             { "User", typeof(User) },
             { "Letter", typeof(Letter) },
+            { "IncorrectUrlException", typeof(IncorrectUrlException) },
+            { "LoginFailedException", typeof(LoginFailedException) },
+            { "NotLoggedInException", typeof(NotLoggedInException) },
+            { "SendEmailFailedException", typeof(SendEmailFailedException) },
+            { "InboxPageGmail", typeof(InboxPageGmail) },
+            { "InboxPageOutlook", typeof(InboxPageOutlook) },
+            { "LoginPageGmail", typeof(LoginPageGmail) },
+            { "LoginPageOutlook", typeof(LoginPageOutlook) }
         };
     }
 

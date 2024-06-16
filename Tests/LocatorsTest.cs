@@ -21,24 +21,10 @@ namespace Locators.Tests {
 
         private static IEnumerable<TestCaseData> LoginGmailDataa() => xmlParser.GetTestData("LocatorsTests", "LoginGmailOnChromeTest", "TestSuite");
 
-        //[Test, TestCaseSource(nameof(LoginGmailData))]
+
         [Test, TestCaseSource(nameof(LoginGmailDataa))]
-        public Type LoginGmailOnChromeTest(User user) {
-            return LoginGmailTests(user, DriverEngine.Chrome);
-        }
-
-        [Test, TestCaseSource(nameof(LoginGmailData))]
-        public Type LoginGmailOnFirefoxTest(User user) {
-            return LoginGmailTests(user, DriverEngine.Firefox);
-        }
-
-        [Test, TestCaseSource(nameof(LoginGmailData))]
-        public Type LoginGmailOnEdgeTest(User user) {
-            return LoginGmailTests(user, DriverEngine.Edge);
-        }
-
-        private Type LoginGmailTests(User user, DriverEngine engine) {
-            using IWebDriver driver = DriverSetup.GetDriverSetup(engine);
+        public Type LoginGmailTests(User user) {
+            using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
             try {
                 var loginPage = new LoginPageGmail(driver);
 

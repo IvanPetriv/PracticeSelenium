@@ -6,6 +6,9 @@
 # Confidential data
 /TestData
 
+# Output
+/Output
+
 # User-specific files
 *.rsuser
 *.suo

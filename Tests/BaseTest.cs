@@ -9,6 +9,7 @@ namespace Locators.Tests
         private static Logger logger = LogManager.GetCurrentClassLogger();
         protected static Credentials credentials;
         protected static XmlTestsParser xmlParser = new(@"D:\LPNU\University\3-year\2-term\STP\Code-2\Locators\TestData\testsDev.xml");
+        protected DriverEngine driverEngine = DriverEngine.Chrome;
 
 
         [OneTimeSetUp]

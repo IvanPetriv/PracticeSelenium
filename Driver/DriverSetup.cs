@@ -11,6 +11,12 @@ namespace Locators.Driver {
 
         public static IWebDriver? Driver { get; private set; } = null;
 
+        /// <summary>
+        /// Setups and returns the driver
+        /// </summary>
+        /// <param name="engine">Driver engine (e.g. Firefox, Chrome etc.)</param>
+        /// <returns>WebDriver of the specified engine</returns>
+        /// <exception cref="ArgumentException"></exception>
         public static IWebDriver GetDriverSetup(DriverEngine engine = DriverEngine.None) {
             if (Driver is null) {
                 switch (engine) {
