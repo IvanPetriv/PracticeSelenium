@@ -41,7 +41,7 @@ namespace Locators.Objects {
 
             // Waits for the password page
             try {
-                wait.Until(ExpectedConditions.ElementExists(By.Name("Passwd")));
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.Name("Passwd")));
             } catch (WebDriverTimeoutException) {
                 throw new LoginFailedException($"Log in Gmail has failed for login '{login}'");
             }

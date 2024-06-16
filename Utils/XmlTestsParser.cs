@@ -1,5 +1,4 @@
 ﻿using System.Xml.Linq;
-using System;
 using Locators.Models;
 using System.Xml;
 using Locators.Exceptions;
@@ -80,7 +79,7 @@ namespace Locators.Utils {
                                 .Select(ParseParameter)
                                 .ToList();
 
-                            TestCaseData testCase = new(parameters.ToArray());
+                            TestCaseData testCase = new([.. parameters]);
 
                             // Defines returns and thros if present
                             string? returnTypeString = testCaseElement.Descendants("Return").FirstOrDefault()?.Attribute("type")?.Value;
@@ -99,6 +98,8 @@ namespace Locators.Utils {
 
                                 if (returnType == typeof(Type)) {
                                     testCase.Returns(ResolveType(returnValue));
+                                } else if (returnType == typeof(string)) {
+                                    testCase.Returns(returnValue);
                                 } else {
                                     testCase.Returns(Activator.CreateInstance(returnType, new object[] { returnValue }));
                                 }
@@ -133,8 +134,13 @@ namespace Locators.Utils {
             Type parameterType = ResolveType(parameterTypeString)
                 ?? throw new NullReferenceException($"Parameter does not have a resolvable type '{parameterTypeString}'");
 
-            return Activator.CreateInstance(parameterType, fields);
+            if (parameterType == typeof(string)) {
+                return parameterElement.Value;
+            } else {
+                return Activator.CreateInstance(parameterType, fields);
+            }
         }
+
 
         private Type? ResolveType(string? typeName) {
             if (string.IsNullOrEmpty(typeName)) {

@@ -37,7 +37,7 @@ namespace Locators.Objects {
             // Initially on login page
             // Enters login and proceeds
             try {
-                wait.Until(ExpectedConditions.ElementExists(By.Name("loginfmt")));
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.Name("loginfmt")));
             } catch (WebDriverTimeoutException) {
                 throw new IncorrectUrlException($"Url does not have the specified element");
             }
@@ -46,7 +46,7 @@ namespace Locators.Objects {
 
             // Waits for the password page
             try {
-                wait.Until(ExpectedConditions.ElementExists(By.Name("passwd")));
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.Name("passwd")));
             } catch (WebDriverTimeoutException) {
                 throw new LoginFailedException($"Log in Outlook has failed for login '{login}'");
             }
@@ -54,6 +54,12 @@ namespace Locators.Objects {
             // Enters the password and proceeds, proceeds with "Remember me"
             passwordField.SendKeys(password);
             proceedPasswordButton.Click();
+
+            try {
+                wait.Until(ExpectedConditions.ElementToBeClickable(By.Id("idSIButton9")));
+            } catch (WebDriverTimeoutException) {
+                throw new LoginFailedException($"Log in Outlook has failed for login '{login}'");
+            }
             proceedDontRemindButton.Click();
 
             try {

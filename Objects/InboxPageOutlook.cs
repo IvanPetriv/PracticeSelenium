@@ -1,18 +1,17 @@
-﻿using Locators.Exceptions;
+﻿using Locators.Models;
 using OpenQA.Selenium;
 using SeleniumExtras.PageObjects;
 using SeleniumExtras.WaitHelpers;
+using System.Text.RegularExpressions;
 
 namespace Locators.Objects {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
-    internal class InboxPageOutlook(IWebDriver driver) : AbstractObject(driver) {
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    internal partial class InboxPageOutlook(IWebDriver driver) : AbstractObject(driver) {
         public const string inboxOutlookUrl = @"https://outlook.office365.com/mail/";
 
         #region WebElements
         [FindsBy(How = How.Id, Using = "MailList")]
         [CacheLookup]
-        private readonly IWebElement mailList;
+        private readonly IWebElement mailList = null!;
         #endregion
 
         /// <summary>
@@ -20,30 +19,30 @@ namespace Locators.Objects {
         /// </summary>
         /// <param name="index">Letter index (zero-based)</param>
         /// <returns>An anonymous class with `Sender`, `Subject`, `Content` fields</returns>
-        public InboxPageOutlook ReadLetter(out object data, int index=0) {
+        public InboxPageOutlook ReadLetter(out Letter data, int index=0) {
             driver.Navigate().GoToUrl(inboxOutlookUrl);
 
-            // Checks if logged in
-            try {
-                wait.Until(ExpectedConditions.UrlMatches(inboxOutlookUrl));
-            } catch (WebDriverTimeoutException) {
-                throw new NotLoggedInException("The user is not logged in");
-            }
-
             // Checks if the mail list is loaded
-            wait.Until(ExpectedConditions.ElementIsVisible(By.Id("MailList")));
+            wait.Until(ExpectedConditions.ElementExists(By.Id("MailList")));
 
             // Gets the nth element (by index)
             IWebElement nthMail = mailList.FindElement(By.XPath($"//div[contains(@id, 'AQAAA')][{index+1}]"));
             nthMail.Click();
 
+            wait.Until(ExpectedConditions.ElementExists(By.XPath("//div[contains(@aria-label, 'Вміст повідомлення')]/div/div/div/div")));
+            wait.Until(ExpectedConditions.ElementExists(By.XPath("//div[@aria-label='Електронний лист']/div/div/div/div/span/span/div/span")));
+
             // Gets the letter data
-            IWebElement mailContent = driver.FindElement(By.XPath("//div[contains(@id, 'UniqueMessageBody')]/div/div/div/div"));
+            IWebElement mailContent = driver.FindElement(By.XPath("//div[contains(@aria-label, 'Вміст повідомлення')]/div/div/div/div"));
             IWebElement mailSender = driver.FindElement(By.XPath("//div[@aria-label='Електронний лист']/div/div/div/div/span/span/div/span"));
             IWebElement mailSubject = driver.FindElement(By.XPath("//div[@id='ConversationReadingPaneContainer']//span[@title and string-length(@title) > 0]"));
-            data = new { Sender = mailSender.Text, Subject = mailSubject.Text, Content = mailContent.Text };
 
+            string mailEmail = SenderEmailPart().Match(mailSender.Text).Groups[1].Value;
+            data = new Letter(Receiver: mailEmail, Subject: mailSubject.Text, Content: mailContent.Text);
             return this;
         }
+
+        [GeneratedRegex(@"<([^>]*)>")]
+        private static partial Regex SenderEmailPart();
     }
 }

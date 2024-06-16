@@ -1,28 +1,20 @@
 using OpenQA.Selenium;
 using Locators.Objects;
 using Locators.Driver;
-using Locators.Exceptions;
 using Locators.Models;
-using Locators.Utils;
+using Locators.Exceptions;
 
 namespace Locators.Tests {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
     public class LocatorsTests : BaseTest {
-        private static readonly IEnumerable<TestCaseData> LoginGmailData = [
-            new TestCaseData(new User("gm.sg", null)).Returns(typeof(LoginFailedException)),
-            new TestCaseData(new User("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs")).Returns(typeof(InboxPageGmail)),
-        ];
-
-        private static readonly IEnumerable<TestCaseData> LoginOutlookData = [
-            new TestCaseData(new User("gm.sg", null)).Returns(typeof(LoginFailedException)),
-            new TestCaseData(new User("ivan.petriv.pz.2021@edu.lpnu.ua", "dA0Fk8vs")).Returns(typeof(InboxPageOutlook)),
-        ];
-
-        private static IEnumerable<TestCaseData> LoginGmailDataa() => xmlParser.GetTestData("LocatorsTests", "LoginGmailOnChromeTest", "TestSuite");
+        private static IEnumerable<TestCaseData> LoginGmailData() => xmlParser.GetTestData("LocatorsTests", "LoginGmailTest", "TestSuite");
+        private static IEnumerable<TestCaseData> LoginOutlookData() => xmlParser.GetTestData("LocatorsTests", "LoginOutlookTest", "TestSuite");
+        private static IEnumerable<TestCaseData> SendEmailData() => xmlParser.GetTestData("LocatorsTests", "SendEmail", "TestSuite");
+        private static IEnumerable<TestCaseData> ChangeUsernameData() => xmlParser.GetTestData("LocatorsTests", "ChangeUsername", "TestSuite");
 
 
-        [Test, TestCaseSource(nameof(LoginGmailDataa))]
+        [Test, TestCaseSource(nameof(LoginGmailData))]
         public Type LoginGmailTests(User user) {
             using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
             try {
@@ -39,7 +31,7 @@ namespace Locators.Tests {
 
         [Test, TestCaseSource(nameof(LoginOutlookData))]
         public Type LoginOutlookTests(User user) {
-            using IWebDriver driver = DriverSetup.GetDriverSetup(DriverEngine.Chrome);
+            using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
             try {
                 var loginPage = new LoginPageOutlook(driver);
 
@@ -52,49 +44,53 @@ namespace Locators.Tests {
             }
         }
 
-        /*
+        [Test, TestCaseSource(nameof(SendEmailData))]
+        public void SendEmail(User gmailUser, User outlookUser, Letter letter) {
+            using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
+            try {
+                AbstractObject sendingFromGoogle = new LoginPageGmail(driver)
+                    .EnterLoginAndProceed(gmailUser.Login, gmailUser.Password)
+                    .SendLetter(letter.Receiver, letter.Subject, letter.Content);
 
-        [TestCase("ivan.petriv.pz.2021@edu.lpnu.ua", "Test Subject", "Test Body")]
-        public void SendEmail(string recipient, string subject, string body) {
-            using DriverInstance driverInstance = new();
-            IWebDriver driver = driverInstance.Driver;
-            var gmailLoginPage = new LoginPageGmail(driver);
+                Thread.Sleep(15000);
 
-            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
+                AbstractObject receivingInOutlook = new LoginPageOutlook(driver)
+                    .EnterLoginAndProceed(outlookUser.Login, outlookUser.Password)
+                    .ReadLetter(out Letter letterData, 0);
 
-            var inboxPage = new InboxPageGmail(driver);
-            inboxPage.SendLetter(recipient, subject, body);
+                Assert.Multiple(() => {
+                    Assert.That(letterData.Receiver, Is.EqualTo(gmailUser.Login));
+                    Assert.That(letterData.Subject, Is.EqualTo(letter.Subject));
+                    Assert.That(letterData.Content, Is.EqualTo(letter.Content));
+                });
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                Assert.That(ex.GetType(), Is.EqualTo(typeof(IncorrectEmailException)));
+            }
         }
 
-        [TestCase("ivan.petriv.pz.2021@edu.lpnu.ua", "test", "Hi hello")]
-        public void CheckIfReceivedCorrectEmail(string receiver, string subject, string content) {
-            using DriverInstance driverInstance = new();
-            IWebDriver driver = driverInstance.Driver;
-            var gmailLoginPage = new LoginPageGmail(driver);
+        [Test, TestCaseSource(nameof(ChangeUsernameData))]
+        public void ChangeUsername(User user, string name, string surname) {
+            using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
+            try {
+                var loginPage = new LoginPageGmail(driver);
 
-            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
+                AbstractObject resultPage = loginPage.EnterLoginAndProceed(user.Login, user.Password);
+                var changePage = new ChangeUsernamePageGmail(driver);
+                changePage.ChangeUsername(name, surname);
 
-            var sendingLetter = new InboxPageGmail(driver);
-            sendingLetter.SendLetter(receiver, subject, content);
+                var data = changePage.GetUsername();
+                Assert.Multiple(() => {
+                    Assert.That(data[0], Is.EqualTo(name));
+                    Assert.That(data[1], Is.EqualTo(surname));
+                });
 
-            var outlookLoginPage = new LoginPageOutlook(driver);
-            gmailLoginPage.EnterLoginAndProceed(credentials.Microsoft[0].Login, credentials.Microsoft[0].Password);
-
-            var outlookInboxPage = new InboxPageOutlook(driver);
-            outlookInboxPage.ReadLetter();
+                //return resultPage.GetType();
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                throw;
+                //return ex.GetType();
+            }
         }
-
-        [TestCase("Ivan", "Petriv")]
-        public void ChangeUsername(string name, string username) {
-            using DriverInstance driverInstance = new();
-            IWebDriver driver = driverInstance.Driver;
-            driver.Navigate().GoToUrl(LoginPageGmail.loginUrl);
-            var gmailLoginPage = new LoginPageGmail(driver);
-
-            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
-
-            var usernamePage = new ChangeUsernamePageGmail(driver);
-            usernamePage.ChangeUsername(name, username);
-        }*/
     }
 }

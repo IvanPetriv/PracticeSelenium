@@ -4,31 +4,27 @@ using SeleniumExtras.PageObjects;
 using SeleniumExtras.WaitHelpers;
 
 namespace Locators.Objects {
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
     public class InboxPageGmail(IWebDriver driver) : AbstractObject(driver) {
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public const string inboxGoogleUrl = @"https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox";
 
         #region WebElements
         [FindsBy(How = How.XPath, Using = "//div[contains(text(), 'Написати')]")]
-        [CacheLookup]
-        private readonly IWebElement writeLetterButton;
+        private readonly IWebElement writeLetterButton = null!;
 
         [FindsBy(How = How.XPath, Using = "//div[@name='to']//input")]
-        [CacheLookup]
-        private readonly IWebElement receiverInput;
+        private readonly IWebElement receiverInput = null!;
 
         [FindsBy(How = How.Name, Using = "subjectbox")]
-        [CacheLookup]
-        private readonly IWebElement titleInput;
+        private readonly IWebElement titleInput = null!;
 
         [FindsBy(How = How.XPath, Using = "//div[@aria-label='Текст повідомлення']")]
-        [CacheLookup]
-        private readonly IWebElement contentInput;
+        private readonly IWebElement contentInput = null!;
 
-        [FindsBy(How = How.XPath, Using = "//div[@aria-label='Надіслати ‪(Ctrl –Enter)‬']")]
-        [CacheLookup]
-        private readonly IWebElement sendLetterButton;
+        [FindsBy(How = How.XPath, Using = "//div[contains(@aria-label, 'Надіслати')]")]
+        private readonly IWebElement sendLetterButton = null!;
+
+        [FindsBy(How = How.Id, Using = "link_enable_notifications_hide")]
+        private readonly IWebElement closeNotification = null!;
         #endregion
 
         /// <summary>
@@ -41,22 +37,28 @@ namespace Locators.Objects {
         public InboxPageGmail SendLetter(string receivers, string subject, string content) {
             driver.Navigate().GoToUrl(inboxGoogleUrl);
 
-            // Checks if logged in
-            try {
-                wait.Until(ExpectedConditions.UrlMatches(inboxGoogleUrl));
-            } catch (WebDriverTimeoutException) {
-                throw new NotLoggedInException("The user is not logged in");
-            }
-
             // Starts writing the letter
             writeLetterButton.Click();
-            wait.Until(ExpectedConditions.ElementExists(By.XPath("//div[@name='to']//input")));
 
             // Enters the provided data and sends it
+            wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//div[@name='to']//input")));
             receiverInput.SendKeys(receivers);
+            wait.Until(ExpectedConditions.ElementToBeClickable(By.Name("subjectbox")));
             titleInput.SendKeys(subject);
+            wait.Until(ExpectedConditions.ElementToBeClickable(By.XPath("//div[@aria-label='Текст повідомлення']")));
             contentInput.SendKeys(content);
-            sendLetterButton.Click();
+            try {
+                closeNotification.Click();
+            } catch (Exception ex) {
+                Console.WriteLine(ex.ToString());
+            }
+
+            try {
+                sendLetterButton.Click();
+            } catch (ElementNotInteractableException) {
+                throw new IncorrectEmailException($"The email has missing/incorrect data which cannot be sent");
+            }
+            
 
             try {
                 wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//span[contains(text(), 'Повідомлення надіслано')]")));
