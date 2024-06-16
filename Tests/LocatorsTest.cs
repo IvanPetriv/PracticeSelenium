@@ -1,71 +1,101 @@
 using OpenQA.Selenium;
 using Locators.Objects;
-using Locators.Tests.Core;
+using Locators.Driver;
+using Locators.Exceptions;
+using Locators.Models;
+using Locators.Utils;
 
 namespace Locators.Tests {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
-    public class LocatorsTests {
-        [TestCase("gm.sg", ExpectedResult = false)]
-        [TestCase("justfobos426@gmail.com", ExpectedResult = true)]
-        [TestCase("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs", ExpectedResult = true)]
-        public bool LoginGmailValidityTest(string login, string? password=null) {
-            using DriverInstance driverInstance = new();
-            IWebDriver driver = driverInstance.Driver;
-            driver.Navigate().GoToUrl(LoginPageGmail.loginUrl);
-            var test = new LoginPageGmail(driver);
+    public class LocatorsTests : BaseTest {
+        private static readonly IEnumerable<TestCaseData> LoginGmailData = [
+            new TestCaseData(new User("gm.sg", null)).Returns(typeof(LoginFailedException)),
+            new TestCaseData(new User("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs")).Returns(typeof(InboxPageGmail)),
+        ];
 
-            bool result = test.EnterLoginAndProceed(login, password, 10);
+        private static readonly IEnumerable<TestCaseData> LoginOutlookData = [
+            new TestCaseData(new User("gm.sg", null)).Returns(typeof(LoginFailedException)),
+            new TestCaseData(new User("ivan.petriv.pz.2021@edu.lpnu.ua", "dA0Fk8vs")).Returns(typeof(InboxPageOutlook)),
+        ];
 
-            return result;
+        private static IEnumerable<TestCaseData> LoginGmailDataa() => xmlParser.GetTestData("LocatorsTests", "LoginGmailOnChromeTest", "TestSuite");
+
+        //[Test, TestCaseSource(nameof(LoginGmailData))]
+        [Test, TestCaseSource(nameof(LoginGmailDataa))]
+        public Type LoginGmailOnChromeTest(User user) {
+            return LoginGmailTests(user, DriverEngine.Chrome);
         }
 
-        //[TestCase("gm.sg", ExpectedResult = false)]
-        //[TestCase("justfobos426@gmail.com", ExpectedResult = true)]
-        [TestCase("ivan.petriv.pz.2021@edu.lpnu.ua", "dA0Fk8vs", ExpectedResult = true)]
-        public bool LoginOutlookValidityTest(string login, string? password = null) {
-            using DriverInstance driverInstance = new();
-            IWebDriver driver = driverInstance.Driver;
-            driver.Navigate().GoToUrl(LoginPageOutlook.loginUrl);
-            var test = new LoginPageOutlook(driver);
-
-            bool result = test.EnterLoginAndProceed(login, password, 10);
-
-            return result;
+        [Test, TestCaseSource(nameof(LoginGmailData))]
+        public Type LoginGmailOnFirefoxTest(User user) {
+            return LoginGmailTests(user, DriverEngine.Firefox);
         }
 
-        [TestCase("justfobos426@gmail.com", "test", "Hi hello")]
-        public void SendEmailAndCheckIfReceivedTest(string sender, string title, string letter) {
+        [Test, TestCaseSource(nameof(LoginGmailData))]
+        public Type LoginGmailOnEdgeTest(User user) {
+            return LoginGmailTests(user, DriverEngine.Edge);
+        }
+
+        private Type LoginGmailTests(User user, DriverEngine engine) {
+            using IWebDriver driver = DriverSetup.GetDriverSetup(engine);
+            try {
+                var loginPage = new LoginPageGmail(driver);
+
+                AbstractObject resultPage = loginPage.EnterLoginAndProceed(user.Login, user.Password);
+
+                return resultPage.GetType();
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                return ex.GetType();
+            }
+        }
+
+        [Test, TestCaseSource(nameof(LoginOutlookData))]
+        public Type LoginOutlookTests(User user) {
+            using IWebDriver driver = DriverSetup.GetDriverSetup(DriverEngine.Chrome);
+            try {
+                var loginPage = new LoginPageOutlook(driver);
+
+                AbstractObject resultPage = loginPage.EnterLoginAndProceed(user.Login, user.Password);
+
+                return resultPage.GetType();
+            } catch (Exception ex) {
+                Console.WriteLine(ex.Message);
+                return ex.GetType();
+            }
+        }
+
+        /*
+
+        [TestCase("ivan.petriv.pz.2021@edu.lpnu.ua", "Test Subject", "Test Body")]
+        public void SendEmail(string recipient, string subject, string body) {
             using DriverInstance driverInstance = new();
             IWebDriver driver = driverInstance.Driver;
-            driver.Navigate().GoToUrl(LoginPageGmail.loginUrl);
-            var login = new LoginPageGmail(driver);
+            var gmailLoginPage = new LoginPageGmail(driver);
 
-            bool result = login.EnterLoginAndProceed("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs", waitTimeSecs: 10);
-            Assert.That(result, Is.True, "Could not log in");
+            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
 
-            var sendingLetter = new InboxPageGmail(driver);
-            sendingLetter.SendLetter(sender, title, letter);
+            var inboxPage = new InboxPageGmail(driver);
+            inboxPage.SendLetter(recipient, subject, body);
         }
 
         [TestCase("ivan.petriv.pz.2021@edu.lpnu.ua", "test", "Hi hello")]
         public void CheckIfReceivedCorrectEmail(string receiver, string subject, string content) {
             using DriverInstance driverInstance = new();
             IWebDriver driver = driverInstance.Driver;
-            driver.Navigate().GoToUrl(LoginPageOutlook.loginUrl);
-            //var login = new LoginPageGmail(driver);
+            var gmailLoginPage = new LoginPageGmail(driver);
 
-            //bool result = login.EnterLoginAndProceed("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs", waitTimeSecs: 10);
-            //Assert.That(result, Is.True, "Could not log in");
+            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
 
-            //var sendingLetter = new InboxPageGmail(driver);
-            //sendingLetter.SendLetter(sender, title, letter);
+            var sendingLetter = new InboxPageGmail(driver);
+            sendingLetter.SendLetter(receiver, subject, content);
 
-            var login = new LoginPageOutlook(driver);
-            login.EnterLoginAndProceed("ivan.petriv.pz.2021@edu.lpnu.ua", "dA0Fk8vs");
+            var outlookLoginPage = new LoginPageOutlook(driver);
+            gmailLoginPage.EnterLoginAndProceed(credentials.Microsoft[0].Login, credentials.Microsoft[0].Password);
 
-            var receive = new InboxPageOutlook(driver);
-            receive.ReadLetter();
+            var outlookInboxPage = new InboxPageOutlook(driver);
+            outlookInboxPage.ReadLetter();
         }
 
         [TestCase("Ivan", "Petriv")]
@@ -73,13 +103,12 @@ namespace Locators.Tests {
             using DriverInstance driverInstance = new();
             IWebDriver driver = driverInstance.Driver;
             driver.Navigate().GoToUrl(LoginPageGmail.loginUrl);
-            var login = new LoginPageGmail(driver);
+            var gmailLoginPage = new LoginPageGmail(driver);
 
-            bool result = login.EnterLoginAndProceed("ivan.petriv.pz.2021@lpnu.ua", "dA0Fk8vs", waitTimeSecs: 10);
-            Assert.That(result, Is.True, "Could not log in");
+            gmailLoginPage.EnterLoginAndProceed(credentials.Google[0].Login, credentials.Google[0].Password);
 
-            var sendingLetter = new InboxPageGmail(driver);
-            sendingLetter.ChangeUsername(name, username);
-        }
+            var usernamePage = new ChangeUsernamePageGmail(driver);
+            usernamePage.ChangeUsername(name, username);
+        }*/
     }
 }

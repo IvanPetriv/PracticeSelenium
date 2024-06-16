@@ -1,23 +1,13 @@
-﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
+﻿using Locators.Exceptions;
+using OpenQA.Selenium;
 using SeleniumExtras.PageObjects;
 using SeleniumExtras.WaitHelpers;
 
 namespace Locators.Objects {
-    internal class InboxPageGmail {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    public class InboxPageGmail(IWebDriver driver) : AbstractObject(driver) {
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public const string inboxGoogleUrl = @"https://mail.google.com/mail/u/0/?tab=rm&ogbl#inbox";
-        readonly IWebDriver driver;
-        WebDriverWait wait;
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="driver">Driver which runs the search engine</param>
-        public InboxPageGmail(IWebDriver driver) {
-            this.driver = driver;
-            wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
-            PageFactory.InitElements(driver, this);
-        }
 
         #region WebElements
         [FindsBy(How = How.XPath, Using = "//div[contains(text(), 'Написати')]")]
@@ -48,14 +38,14 @@ namespace Locators.Objects {
         /// <param name="subject">Subject of the letter</param>
         /// <param name="content">Content of the letter</param>
         /// <returns>`true` if the letter was sent, `false` otherwise</returns>
-        public bool SendLetter(string receivers, string subject, string content) {
+        public InboxPageGmail SendLetter(string receivers, string subject, string content) {
             driver.Navigate().GoToUrl(inboxGoogleUrl);
 
             // Checks if logged in
             try {
                 wait.Until(ExpectedConditions.UrlMatches(inboxGoogleUrl));
             } catch (WebDriverTimeoutException) {
-                return false;
+                throw new NotLoggedInException("The user is not logged in");
             }
 
             // Starts writing the letter
@@ -70,10 +60,11 @@ namespace Locators.Objects {
 
             try {
                 wait.Until(ExpectedConditions.ElementIsVisible(By.XPath("//span[contains(text(), 'Повідомлення надіслано')]")));
-                return true;
             } catch (WebDriverTimeoutException) {
-                return false;
+                throw new SendEmailFailedException($"The email was not sent. Subject: '{subject}' to users '{receivers}' with content: '{content}'");
             }
+
+            return this;
         }
     }
 }

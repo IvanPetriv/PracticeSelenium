@@ -1,21 +1,12 @@
 ﻿using OpenQA.Selenium;
-using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.PageObjects;
 using SeleniumExtras.WaitHelpers;
 
 namespace Locators.Objects {
-    internal class ChangeUsernamePageGmail {
+#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
+    internal class ChangeUsernamePageGmail(IWebDriver driver) : AbstractObject(driver) {
+#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider declaring as nullable.
         public const string changeUsernameUrl = @"https://myaccount.google.com/profile/name?continue=https%3A%2F%2Fmyaccount.google.com%2Fpersonal-info%3Fhl%3Duk%26utm_source%3DOGB%26utm_medium%3Dact&hl=uk&utm_source=OGB&utm_medium=act";
-        readonly IWebDriver driver;
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="driver">Driver which runs the search engine</param>
-        public ChangeUsernamePageGmail(IWebDriver driver) {
-            this.driver = driver;
-            PageFactory.InitElements(driver, this);
-        }
 
         #region WebElements
         [FindsBy(How = How.XPath, Using = "//button[@aria-label='Змінити поле &quot;Ім’я&quot;']")]
@@ -42,13 +33,11 @@ namespace Locators.Objects {
         /// <param name="surname">New surname for the user</param>
         public void ChangeUsername(string name, string surname) {
             driver.Navigate().GoToUrl(changeUsernameUrl);
-            int waitTimeSecs = 3;
 
             // Proceeds with changing
             changeUsernameButton.Click();
 
             // Waits until inputs appear
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(waitTimeSecs));
             wait.Until(ExpectedConditions.ElementExists(By.XPath("//input[2]")));
 
             // Inputs the data and proceeds
