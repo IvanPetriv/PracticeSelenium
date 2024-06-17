@@ -7,13 +7,17 @@ namespace Locators.Tests
 {
     public class BaseTest {
         protected static Logger logger = LogManager.GetCurrentClassLogger();
-        protected static XmlTestsParser xmlParser = new(@"D:\LPNU\University\3-year\2-term\STP\Code-2\Locators\TestData\testsDev.xml");
-        protected DriverEngine driverEngine = DriverEngine.Chrome;
+        protected static DriverEngine driverEngine = DriverEngine.Firefox;
+        protected static string environment = Environment.GetEnvironmentVariable("env")
+            ?? throw new ArgumentNullException($"Could not receive 'env' parameter"); // dev, qa
+        protected static string testSuite = Environment.GetEnvironmentVariable("testSuite")
+            ?? throw new ArgumentNullException($"Could not receive 'testSuite' parameter"); // Smoke, All
+
+        protected static XmlTestsParser xmlParser = new(@"D:\LPNU\University\3-year\2-term\STP\Code-2\Locators\TestData\" + (environment == "dev" ? "testsDev.xml" : "testsQa.xml"));
 
 
         [OneTimeSetUp]
         public void SetUp() {
-            //credentials = Credentials.DeserializeJson(@"..\..\..\TestData\TestCredentials.json");
         }
 
         [TearDown]

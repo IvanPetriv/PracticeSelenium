@@ -8,10 +8,60 @@ namespace Locators.Tests {
     [TestFixture]
     [Parallelizable(ParallelScope.All)]
     public class LocatorsTests : BaseTest {
-        private static IEnumerable<TestCaseData> LoginGmailData() => xmlParser.GetTestData("LocatorsTests", "LoginGmailTest", "TestSuite");
-        private static IEnumerable<TestCaseData> LoginOutlookData() => xmlParser.GetTestData("LocatorsTests", "LoginOutlookTest", "TestSuite");
-        private static IEnumerable<TestCaseData> SendEmailData() => xmlParser.GetTestData("LocatorsTests", "SendEmail", "TestSuite");
-        private static IEnumerable<TestCaseData> ChangeUsernameData() => xmlParser.GetTestData("LocatorsTests", "ChangeUsername", "TestSuite");
+        #region TestData
+        private static IEnumerable<TestCaseData> LoginGmailData() {
+            switch (testSuite) {
+                case "Smoke": {
+                    return xmlParser.GetTestData("LocatorsTests", "LoginGmailTest", "Smoke");
+                }
+                case "All": {
+                    return xmlParser.GetTestData("LocatorsTests", "LoginGmailTest", "All");
+                }
+                default: {
+                    throw new ArgumentException($"'{testSuite}' test suite doesn't exist");
+                }
+            }
+        }
+        private static IEnumerable<TestCaseData> LoginOutlookData() {
+            switch (testSuite) {
+                case "Smoke": {
+                    return xmlParser.GetTestData("LocatorsTests", "LoginOutlookTest", "Smoke");
+                }
+                case "All": {
+                    return xmlParser.GetTestData("LocatorsTests", "LoginOutlookTest", "All");
+                }
+                default: {
+                    throw new ArgumentException($"'{testSuite}' test suite doesn't exist");
+                }
+            }
+        }
+        private static IEnumerable<TestCaseData> SendEmailData() {
+            switch (testSuite) {
+                case "Smoke": {
+                    return xmlParser.GetTestData("LocatorsTests", "SendEmailTest", "Smoke");
+                }
+                case "All": {
+                    return xmlParser.GetTestData("LocatorsTests", "SendEmailTest", "All");
+                }
+                default: {
+                    throw new ArgumentException($"'{testSuite}' test suite doesn't exist");
+                }
+            }
+        }
+        private static IEnumerable<TestCaseData> ChangeUsernameData() {
+            switch (testSuite) {
+                case "Smoke": {
+                    return xmlParser.GetTestData("LocatorsTests", "ChangeUsernameTest", "Smoke");
+                }
+                case "All": {
+                    return xmlParser.GetTestData("LocatorsTests", "ChangeUsernameTest", "All");
+                }
+                default: {
+                    throw new ArgumentException($"'{testSuite}' test suite doesn't exist");
+                }
+            }
+        }
+        #endregion
 
 
         [Test, TestCaseSource(nameof(LoginGmailData))]
@@ -45,7 +95,7 @@ namespace Locators.Tests {
         }
 
         [Test, TestCaseSource(nameof(SendEmailData))]
-        public void SendEmail(User gmailUser, User outlookUser, Letter letter) {
+        public void SendEmailTest(User gmailUser, User outlookUser, Letter letter) {
             using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
             try {
                 AbstractObject sendingFromGoogle = new LoginPageGmail(driver)
@@ -70,7 +120,7 @@ namespace Locators.Tests {
         }
 
         [Test, TestCaseSource(nameof(ChangeUsernameData))]
-        public void ChangeUsername(User user, string name, string surname) {
+        public void ChangeUsernameTest(User user, string name, string surname) {
             using IWebDriver driver = DriverSetup.GetDriverSetup(driverEngine);
             try {
                 var loginPage = new LoginPageGmail(driver);
